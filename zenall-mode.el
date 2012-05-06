@@ -1,4 +1,3 @@
-(setq zenall-root "/home/daniel/code/lisp/zenall/")
 (setq zenall-css-lookup-alist '(
     ("o" . "outline:;")
     ("o:n" . "outline:none;")
@@ -481,41 +480,42 @@
     ("pgba:aw" . "page-break-after:always;")
     ("pgba:l" . "page-break-after:left;")
     ("pgba:r" . "page-break-after:right;")
-    ("orp" . "orphans:;")
+    ("orp" . "orphans:;") 
     ("wid" . "widows:;")))
-
 
 (defun zenall-css-lookup (key) 
   (interactive)
   (cdr (assoc key zenall-css-lookup-alist)))
 
-
-(defun zenall-lookup (key)
+(defun zenall-sgml-lookup (key)
   (interactive)
-  (let ((fpath (concat zenall-root "snippets/" key)))
-    (message fpath)
-    (if (file-exists-p fpath)
-        (with-temp-buffer
-          (insert-file-contents fpath)
-          (buffer-string)))))
-
+  key)
 
 (defun zenall-expand ()
   (interactive)
   (save-excursion 
     (if (re-search-backward "\\b\\(.+\\)\\b")
         (let* ((txt (match-string 1))
-               (output (zenall-lookup txt)))
-          (unless (stringp output)
-            (setq output (format "<%s></%s>" txt txt)))
-          (message output)
-          output))))
-
-
+               (start (match-beginning 0))
+               (end (match-end 0))
+               (output (funcall zenall-lookup-fn txt)))
+          (when (stringp output)
+              (delete-region start end)
+              (insert output))))))
+          
 (defun zenall-mode ()
   (interactive)
-  )
+  (local-set-key (kbd "C-c j") 'zenall-expand)
+  (setq zenall-lookup-fn nil)
+  (make-variable-buffer-local 'zenall-lookup-type))
 
+(add-hook 'css-mode-hook
+          (lambda ()
+            (setq zenall-lookup-fn 'zenall-css-lookup)))
+
+(add-hook 'sgml-mode-hook
+          (lambda ()
+            (setq zenall-lookup-fn 'zenall-sgml-lookup)))
 
 (provide 'zenall-mode)
 
